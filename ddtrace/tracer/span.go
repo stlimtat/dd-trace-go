@@ -22,6 +22,7 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/internal"
 	"gopkg.in/DataDog/dd-trace-go.v1/internal/globalconfig"
+	"gopkg.in/DataDog/dd-trace-go.v1/internal/log"
 
 	"github.com/tinylib/msgp/msgp"
 	"golang.org/x/xerrors"
@@ -319,7 +320,59 @@ func (s *span) finish(finishTime int64) {
 		// not sampled by local sampler
 		return
 	}
+	if t, ok := internal.GetGlobalTracer().(*tracer); ok {
+		// we have an active tracer
+		feats := t.features.Load()
+		if feats.Stats && shouldComputeStats(s) {
+			// the agent supports computed stats
+			var statusCode uint32
+			if sc, ok := s.Meta["http.status_code"]; ok && sc != "" {
+				if c, err := strconv.Atoi(sc); err == nil {
+					statusCode = uint32(c)
+				}
+			}
+			select {
+			case t.stats.In <- &spanSummary{
+				Start:      s.Start,
+				Duration:   s.Duration,
+				Name:       s.Name,
+				Resource:   s.Resource,
+				Service:    s.Service,
+				Type:       s.Type,
+				Hostname:   s.Meta[keyHostname],
+				Synthetics: strings.HasPrefix(s.Meta[keyOrigin], "synthetics"),
+				Env:        s.Meta[ext.Environment],
+				StatusCode: statusCode,
+				Version:    t.config.version,
+				TopLevel:   s.Metrics[keyTopLevel] == 1,
+				Error:      s.Error,
+			}:
+				// ok
+			default:
+				log.Error("Stats channel full, disregarding span.")
+			}
+		}
+		if feats.DropP0s {
+			// the agent supports dropping p0's in the client
+			if p, ok := s.context.samplingPriority(); ok && p <= 0 {
+				// ...and this trace qualifies
+				return
+			}
+		}
+	}
 	s.context.finish()
+}
+
+// shouldComputeStats mentions whether this span needs to have stats computed for.
+// Warning: callers must guard!
+func shouldComputeStats(s *span) bool {
+	if v, ok := s.Metrics[keyMeasured]; ok && v == 1 {
+		return true
+	}
+	if v, ok := s.Metrics[keyTopLevel]; ok && v == 1 {
+		return true
+	}
+	return false
 }
 
 // String returns a human readable representation of the span. Not for
