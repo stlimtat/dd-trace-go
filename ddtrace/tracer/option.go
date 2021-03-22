@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +22,7 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/DataDog/dd-trace-go.v1/internal"
+	"gopkg.in/DataDog/dd-trace-go.v1/internal/bitset"
 	"gopkg.in/DataDog/dd-trace-go.v1/internal/globalconfig"
 	"gopkg.in/DataDog/dd-trace-go.v1/internal/log"
 	"gopkg.in/DataDog/dd-trace-go.v1/internal/version"
@@ -166,10 +166,10 @@ func newConfig(opts ...StartOption) *config {
 		}
 	}
 	if v := os.Getenv("DD_HTTP_CLIENT_ERROR_STATUSES"); v != "" {
-		WithHTTPClientErrorStatuses(v)
+		WithHTTPClientErrorStatuses(v)(c)
 	}
 	if v := os.Getenv("DD_HTTP_SERVER_ERROR_STATUSES"); v != "" {
-		WithHTTPServerErrorStatuses(v)
+		WithHTTPServerErrorStatuses(v)(c)
 	}
 	if _, ok := os.LookupEnv("AWS_LAMBDA_FUNCTION_NAME"); ok {
 		// AWS_LAMBDA_FUNCTION_NAME being set indicates that we're running in an AWS Lambda environment.
@@ -587,10 +587,10 @@ func StackFrames(n, skip uint) FinishOption {
 	}
 }
 
-// parseHTTPCodeRanges parses range pairs and returns a valid slice of HTTP status codes.
-func parseHTTPCodeRanges(r string) []int {
-	re := regexp.MustCompile(`\\d{3}(?:-\\d{3})*(?:,\\d{3}(?:-\\d{3})*)*`)
-	codes := []int{}
+// parseHTTPCodeRanges parses range pairs and returns a bitset mapping of HTTP status codes.
+func parseHTTPCodeRanges(r string) *bitset.BitSet {
+	re := regexp.MustCompile("\\d{3}(?:-\\d{3})*(?:,\\d{3}(?:-\\d{3})*)*")
+	codes := bitset.New(0)
 	for _, code := range strings.Split(r, ",") {
 		code = strings.TrimSpace(code)
 		if code == "" {
@@ -603,27 +603,23 @@ func parseHTTPCodeRanges(r string) []int {
 		rg := strings.Split(code, "-")
 		if len(rg) == 1 {
 			val, _ := strconv.Atoi(rg[0])
-			codes = appendOrdered(codes, val)
+			codes.Add(uint(val))
 		} else {
 			if rg[0] > rg[1] {
 				rg[0], rg[1] = rg[1], rg[0]
 			}
-			min, _ := strconv.Atoi(rg[0])
-			max, _ := strconv.Atoi(rg[1])
+			min, err := strconv.Atoi(rg[0])
+			if err != nil {
+				log.Warn("Invalid input.")
+			}
+			max, err := strconv.Atoi(rg[1])
+			if err != nil {
+				log.Warn("Invalid input.")
+			}
 			for i := min; i <= max; i++ {
-				codes = appendOrdered(codes, i)
+				codes.Add(uint(i))
 			}
 		}
 	}
 	return codes
-}
-
-// appendOrdered appends n to the slice s at the necessary index such that the resulting slice is kept ordered.
-func appendOrdered(s []int, n int) []int {
-	sort.Ints(s)
-	i := sort.SearchInts(s, n)
-	s = append(s, 0)
-	copy(s[i+1:], s[i:])
-	s[i] = n
-	return s
 }

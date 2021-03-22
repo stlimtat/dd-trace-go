@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"gopkg.in/DataDog/dd-trace-go.v1/internal/bitset"
 )
 
 var cfg = &config{
@@ -26,8 +27,8 @@ type config struct {
 	runtimeID     string
 
 	// specifies the range of HTTP client/server status codes considered as errors.
-	httpClientCodes []int
-	httpServerCodes []int
+	httpClientCodes *bitset.BitSet
+	httpServerCodes *bitset.BitSet
 }
 
 // AnalyticsRate returns the sampling rate at which events should be marked. It uses
@@ -68,29 +69,39 @@ func RuntimeID() string {
 }
 
 // HTTPClientCodes returns the http client codes identified as errors.
-func HTTPClientCodes() []int {
+func HTTPClientCodes() *bitset.BitSet {
 	cfg.mu.RLock()
 	defer cfg.mu.RUnlock()
 	return cfg.httpClientCodes
 }
 
 // SetHTTPClientCodes sets the http client codes identified as errors.
-func SetHTTPClientCodes(codes []int) {
-	cfg.mu.RLock()
-	defer cfg.mu.RUnlock()
+func SetHTTPClientCodes(codes *bitset.BitSet) {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
 	cfg.httpClientCodes = codes
 }
 
 // HTTPServerCodes returns the http server codes identified as errors.
-func HTTPServerCodes() []int {
+func HTTPServerCodes() *bitset.BitSet {
 	cfg.mu.RLock()
 	defer cfg.mu.RUnlock()
 	return cfg.httpServerCodes
 }
 
 // SetHTTPServerCodes sets the http server codes identified as errors.
-func SetHTTPServerCodes(codes []int) {
-	cfg.mu.RLock()
-	defer cfg.mu.RUnlock()
+func SetHTTPServerCodes(codes *bitset.BitSet) {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
 	cfg.httpServerCodes = codes
+}
+
+// IsHTTPClientError checks if the bitset of HTTP client codes contains a given HTTP client error code.
+func IsHTTPClientError(c int) bool {
+	return HTTPClientCodes().Contains(uint(c))
+}
+
+// IsHTTPServerError checks if the bitset of HTTP server codes contains a given HTTP server error code.
+func IsHTTPServerError(c int) bool {
+	return HTTPServerCodes().Contains(uint(c))
 }
