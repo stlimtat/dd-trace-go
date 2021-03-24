@@ -8,10 +8,7 @@
 package tracer
 
 import (
-	"bytes"
-	"fmt"
 	"math/rand"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,7 +17,6 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/internal/log"
 
 	"github.com/DataDog/sketches-go/ddsketch"
-	"github.com/tinylib/msgp/msgp"
 )
 
 type spanSummary struct {
@@ -38,11 +34,18 @@ type spanSummary struct {
 	TopLevel        bool
 }
 
+// bucketSize specifies the size of a stats bucket.
+var bucketSize = (10 * time.Second).Nanoseconds()
+
 type concentrator struct {
 	In chan *spanSummary
 
-	mu      sync.Mutex
-	buckets map[int64]*rawBucket // buckets used to aggregate stats per timestamp
+	// mu guards buckets
+	mu sync.Mutex
+
+	// buckets maintains a set of buckets, where the map key represents
+	// the starting point in time of that bucket, in nanoseconds.
+	buckets map[int64]*rawBucket
 
 	bufferLen int
 	oldestTs  int64
@@ -66,8 +69,6 @@ func newConcentrator(c *config) *concentrator {
 	}
 }
 
-var bucketSize = (10 * time.Second).Nanoseconds()
-
 // alignTs returns the provided timestamp truncated to the bucket size.
 // It gives us the start time of the time bucket in which such timestamp falls.
 func alignTs(ts int64) int64 { return ts - ts%bucketSize }
@@ -85,24 +86,9 @@ func (c *concentrator) Start() {
 					// nothing to flush
 					continue
 				}
-				addr := fmt.Sprintf("http://%s/v0.5/stats", c.cfg.agentAddr)
-				var buf bytes.Buffer
-				if err := msgp.Encode(&buf, &p); err != nil {
-					log.Error("Error encoding stats payload: %v", err)
-					continue
+				if err := c.cfg.transport.sendStats(&p); err != nil {
+					log.Error("Error sending stats payload: %v", err)
 				}
-				req, err := http.NewRequest("POST", addr, &buf)
-				if err != nil {
-					log.Error("Error flushing stats: %v", err)
-					continue
-				}
-				// TODO: use user defined client
-				resp, err := defaultClient.Do(req)
-				if err != nil {
-					log.Error("Error flushing stats: %v", err)
-					continue
-				}
-				fmt.Printf("%#v", resp)
 			case <-c.stop:
 				return
 			}
@@ -111,21 +97,28 @@ func (c *concentrator) Start() {
 	for {
 		select {
 		case ss := <-c.In:
-			btime := alignTs(ss.Start + ss.Duration)
-			if btime < c.oldestTs {
-				btime = c.oldestTs
-			}
-			b, ok := c.buckets[btime]
-			if !ok {
-				b = newRawBucket(uint64(btime))
-				c.buckets[btime] = b
-			}
-			b.handleSpan(ss)
+			c.add(ss)
 		case <-c.stop:
 			atomic.AddUint32(&c.stopped, 1)
 			return
 		}
 	}
+}
+
+func (c *concentrator) add(ss *spanSummary) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	btime := alignTs(ss.Start + ss.Duration)
+	if btime < c.oldestTs {
+		btime = c.oldestTs
+	}
+	b, ok := c.buckets[btime]
+	if !ok {
+		b = newRawBucket(uint64(btime))
+		c.buckets[btime] = b
+	}
+	b.handleSpan(ss)
 }
 
 func (c *concentrator) Stop() {
@@ -137,6 +130,9 @@ func (c *concentrator) Stop() {
 }
 
 func (c *concentrator) flush(timenow time.Time) statsPayload {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	now := timenow.UnixNano()
 	sp := statsPayload{
 		Hostname: c.cfg.hostname,
@@ -144,7 +140,6 @@ func (c *concentrator) flush(timenow time.Time) statsPayload {
 		Version:  c.cfg.version,
 		Stats:    make([]statsBucket, 0, len(c.buckets)),
 	}
-	c.mu.Lock()
 	for ts, srb := range c.buckets {
 		// Always keep `bufferLen` buckets (default is 2: current + previous one).
 		// This is a trade-off: we accept slightly late traces (clock skew and stuff)
@@ -163,7 +158,6 @@ func (c *concentrator) flush(timenow time.Time) statsPayload {
 		log.Debug("Update oldestTs to %d", newOldestTs)
 		c.oldestTs = newOldestTs
 	}
-	c.mu.Unlock()
 	return sp
 }
 

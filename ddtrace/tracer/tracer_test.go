@@ -464,6 +464,11 @@ func TestTracerNoDebugStack(t *testing.T) {
 	assert.Empty(s.Meta[ext.ErrorStack])
 }
 
+// newDefaultTransport return a default transport for this tracing client
+func newDefaultTransport() transport {
+	return newHTTPTransport(defaultAddress, defaultClient)
+}
+
 func TestNewSpan(t *testing.T) {
 	assert := assert.New(t)
 
@@ -1246,6 +1251,10 @@ func (t *dummyTransport) Len() int {
 	t.RLock()
 	defer t.RUnlock()
 	return len(t.traces)
+}
+
+func (t *dummyTransport) sendStats(p *statsPayload) error {
+	return nil
 }
 
 func (t *dummyTransport) send(p *payload) (io.ReadCloser, error) {
