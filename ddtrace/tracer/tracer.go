@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
@@ -66,6 +67,9 @@ type tracer struct {
 	// These integers track metrics about spans and traces as they are started,
 	// finished, and dropped
 	spansStarted, spansFinished, tracesDropped int64
+
+	// Records the number of dropped P0 traces and spans.
+	droppedP0Traces, droppedP0Spans uint64
 
 	// rulesSampling holds an instance of the rules sampler. These are user-defined
 	// rules for applying a sampling rate to spans that match the designated service
@@ -280,6 +284,13 @@ func (t *tracer) loadAgentFeatures() {
 		}
 	}
 	t.features.Store(f)
+	t.config.transport.onFlush(func() state {
+		return state{
+			clientStats:     f.Stats,
+			droppedP0Traces: atomic.SwapUint64(&t.droppedP0Traces, 0),
+			droppedP0Spans:  atomic.SwapUint64(&t.droppedP0Spans, 0),
+		}
+	})
 }
 
 // worker receives finished traces to be added into the payload, as well

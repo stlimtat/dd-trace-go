@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
@@ -356,6 +357,10 @@ func (s *span) finish(finishTime int64) {
 			// the agent supports dropping p0's in the client
 			if p, ok := s.context.samplingPriority(); ok && p <= 0 {
 				// ...and this trace qualifies
+				atomic.AddUint64(&t.droppedP0Spans, 1)
+				if s == s.context.trace.root {
+					atomic.AddUint64(&t.droppedP0Traces, 1)
+				}
 				return
 			}
 		}
