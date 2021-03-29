@@ -206,11 +206,7 @@ func newTracer(opts ...StartOption) *tracer {
 		defer t.wg.Done()
 		t.reportHealthMetrics(statsInterval)
 	}()
-	t.wg.Add(1)
-	go func() {
-		defer t.wg.Done()
-		t.stats.Start()
-	}()
+	t.stats.Start()
 	return t
 }
 

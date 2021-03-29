@@ -40,17 +40,18 @@ var bucketSize = (10 * time.Second).Nanoseconds()
 type concentrator struct {
 	In chan *spanSummary
 
-	// mu guards buckets
-	mu sync.Mutex
-
+	// mu guards below
+	mu sync.RWMutex
 	// buckets maintains a set of buckets, where the map key represents
 	// the starting point in time of that bucket, in nanoseconds.
 	buckets map[int64]*rawBucket
+	// stopped reports whether the concentrator is stopped (when non-zero)
+	stopped uint64
 
+	wg        sync.WaitGroup
 	bufferLen int
 	oldestTs  int64
 	stop      chan struct{}
-	stopped   uint32 // atomic bool
 	cfg       *config
 }
 
@@ -74,10 +75,19 @@ func newConcentrator(c *config) *concentrator {
 func alignTs(ts int64) int64 { return ts - ts%bucketSize }
 
 func (c *concentrator) Start() {
-	defer close(c.stop)
+	c.wg.Add(1)
+	go func() {
+		defer c.wg.Done()
+		c.start()
+	}()
+}
+
+func (c *concentrator) start() {
 	tick := time.NewTicker(time.Duration(bucketSize) * time.Nanosecond)
 	defer tick.Stop()
+	c.wg.Add(1)
 	go func() {
+		defer c.wg.Done()
 		for {
 			select {
 			case now := <-tick.C:
@@ -99,7 +109,6 @@ func (c *concentrator) Start() {
 		case ss := <-c.In:
 			c.add(ss)
 		case <-c.stop:
-			atomic.AddUint32(&c.stopped, 1)
 			return
 		}
 	}
@@ -122,11 +131,11 @@ func (c *concentrator) add(ss *spanSummary) {
 }
 
 func (c *concentrator) Stop() {
-	if atomic.LoadUint32(&c.stopped) > 0 {
+	if atomic.SwapUint64(&c.stopped, 1) > 0 {
 		return
 	}
-	c.stop <- struct{}{}
-	<-c.stop
+	close(c.stop)
+	c.wg.Wait()
 }
 
 func (c *concentrator) flush(timenow time.Time) statsPayload {
