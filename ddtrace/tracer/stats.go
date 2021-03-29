@@ -238,11 +238,11 @@ func (sb *rawBucket) handleSpan(ss *spanSummary) {
 		sb.data[key] = gs
 	}
 	if ss.TopLevel {
-		gs.topLevelHits += 1
+		gs.topLevelHits++
 	}
-	gs.hits += 1
+	gs.hits++
 	if ss.Error != 0 {
-		gs.errors += 1
+		gs.errors++
 	}
 	gs.duration += float64(ss.Duration)
 	// alter resolution of duration distro
