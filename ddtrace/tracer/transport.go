@@ -180,7 +180,7 @@ func (t *httpTransport) send(p *payload) (body io.ReadCloser, err error) {
 	}
 	if state.droppedP0Traces > 0 || state.droppedP0Spans > 0 {
 		req.Header.Set("Datadog-Client-Dropped-P0-Traces", strconv.Itoa(int(state.droppedP0Traces)))
-		req.Header.Set("Datadog-Client-Dropped-P0-Spans", strconv.Itoa(int(state.droppedP0Traces)))
+		req.Header.Set("Datadog-Client-Dropped-P0-Spans", strconv.Itoa(int(state.droppedP0Spans)))
 	}
 	response, err := t.client.Do(req)
 	if err != nil {

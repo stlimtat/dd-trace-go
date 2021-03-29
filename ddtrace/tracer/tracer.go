@@ -283,8 +283,8 @@ func (t *tracer) loadAgentFeatures() {
 	t.config.transport.onFlush(func() state {
 		return state{
 			clientStats:     f.Stats,
-			droppedP0Traces: atomic.LoadUint64(&t.droppedP0Traces),
-			droppedP0Spans:  atomic.LoadUint64(&t.droppedP0Spans),
+			droppedP0Traces: atomic.SwapUint64(&t.droppedP0Traces, 0),
+			droppedP0Spans:  atomic.SwapUint64(&t.droppedP0Spans, 0),
 		}
 	})
 }

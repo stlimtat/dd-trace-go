@@ -317,10 +317,6 @@ func (s *span) finish(finishTime int64) {
 	}
 	s.finished = true
 
-	if s.context.drop {
-		// not sampled by local sampler
-		return
-	}
 	if t, ok := internal.GetGlobalTracer().(*tracer); ok {
 		// we have an active tracer
 		feats := t.features.Load()
@@ -364,6 +360,10 @@ func (s *span) finish(finishTime int64) {
 				return
 			}
 		}
+	}
+	if s.context.drop {
+		// not sampled by local sampler
+		return
 	}
 	s.context.finish()
 }
