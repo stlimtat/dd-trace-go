@@ -131,21 +131,32 @@ func (s *span) SetTag(key string, value interface{}) {
 // setTagError sets the error tag. It accounts for various valid scenarios.
 // This method is not safe for concurrent use.
 func (s *span) setTagError(value interface{}, cfg *errorConfig) {
+	setError := func(yes bool) {
+		if yes {
+			if s.Error == 0 {
+				// new error
+				atomic.AddInt64(&s.context.errors, 1)
+			}
+			s.Error = 1
+		} else {
+			if s.Error > 0 {
+				// flip from active to inactive
+				atomic.AddInt64(&s.context.errors, -1)
+			}
+			s.Error = 0
+		}
+	}
 	if s.finished {
 		return
 	}
 	switch v := value.(type) {
 	case bool:
 		// bool value as per Opentracing spec.
-		if !v {
-			s.Error = 0
-		} else {
-			s.Error = 1
-		}
+		setError(v)
 	case error:
 		// if anyone sets an error value as the tag, be nice here
 		// and provide all the benefits.
-		s.Error = 1
+		setError(true)
 		s.setMeta(ext.ErrorMsg, v.Error())
 		s.setMeta(ext.ErrorType, reflect.TypeOf(v).String())
 		if !cfg.noDebugStack {
@@ -164,11 +175,11 @@ func (s *span) setTagError(value interface{}, cfg *errorConfig) {
 		}
 	case nil:
 		// no error
-		s.Error = 0
+		setError(false)
 	default:
 		// in all other cases, let's assume that setting this tag
 		// is the result of an error.
-		s.Error = 1
+		setError(true)
 	}
 }
 
@@ -351,8 +362,8 @@ func (s *span) finish(finishTime int64) {
 		}
 		if feats.DropP0s {
 			// the agent supports dropping p0's in the client
-			if p, ok := s.context.samplingPriority(); ok && p <= 0 {
-				// ...and this trace qualifies
+			if shouldDrop(s) {
+				// ...and this span can be dropped
 				atomic.AddUint64(&t.droppedP0Spans, 1)
 				if s == s.context.trace.root {
 					atomic.AddUint64(&t.droppedP0Traces, 1)
@@ -366,6 +377,22 @@ func (s *span) finish(finishTime int64) {
 		return
 	}
 	s.context.finish()
+}
+
+// shouldDrop reports whether it's fine to drop the span s.
+func shouldDrop(s *span) bool {
+	if p, ok := s.context.samplingPriority(); ok && p > 0 {
+		// positive sampling priorities stay
+		return false
+	}
+	if atomic.LoadInt64(&s.context.errors) > 0 {
+		// traces with any span containing an error get kept
+		return false
+	}
+	if v, ok := s.Metrics[ext.EventSampleRate]; ok {
+		return sampledByRate(s.TraceID, v)
+	}
+	return true
 }
 
 // shouldComputeStats mentions whether this span needs to have stats computed for.
