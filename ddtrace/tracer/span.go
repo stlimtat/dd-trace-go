@@ -333,28 +333,8 @@ func (s *span) finish(finishTime int64) {
 		feats := t.features.Load()
 		if feats.Stats && shouldComputeStats(s) {
 			// the agent supports computed stats
-			var statusCode uint32
-			if sc, ok := s.Meta["http.status_code"]; ok && sc != "" {
-				if c, err := strconv.Atoi(sc); err == nil {
-					statusCode = uint32(c)
-				}
-			}
 			select {
-			case t.stats.In <- &spanSummary{
-				Start:      s.Start,
-				Duration:   s.Duration,
-				Name:       s.Name,
-				Resource:   s.Resource,
-				Service:    s.Service,
-				Type:       s.Type,
-				Hostname:   s.Meta[keyHostname],
-				Synthetics: strings.HasPrefix(s.Meta[keyOrigin], "synthetics"),
-				Env:        s.Meta[ext.Environment],
-				StatusCode: statusCode,
-				Version:    t.config.version,
-				TopLevel:   s.Metrics[keyTopLevel] == 1,
-				Error:      s.Error,
-			}:
+			case t.stats.In <- newAggregableSpan(s, t.config.version):
 				// ok
 			default:
 				log.Error("Stats channel full, disregarding span.")
@@ -377,6 +357,35 @@ func (s *span) finish(finishTime int64) {
 		return
 	}
 	s.context.finish()
+}
+
+// newAggregableSpan creates a new summary for the span s, within an application
+// version version.
+func newAggregableSpan(s *span, version string) *aggregableSpan {
+	var statusCode uint32
+	if sc, ok := s.Meta["http.status_code"]; ok && sc != "" {
+		if c, err := strconv.Atoi(sc); err == nil {
+			statusCode = uint32(c)
+		}
+	}
+	key := aggregation{
+		Name:       s.Name,
+		Resource:   s.Resource,
+		Service:    s.Service,
+		Type:       s.Type,
+		Hostname:   s.Meta[keyHostname],
+		Synthetics: strings.HasPrefix(s.Meta[keyOrigin], "synthetics"),
+		Env:        s.Meta[ext.Environment],
+		StatusCode: statusCode,
+		Version:    version,
+	}
+	return &aggregableSpan{
+		key:      key,
+		Start:    s.Start,
+		Duration: s.Duration,
+		TopLevel: s.Metrics[keyTopLevel] == 1,
+		Error:    s.Error,
+	}
 }
 
 // shouldDrop reports whether it's fine to drop the span s.

@@ -1241,6 +1241,7 @@ func startTestTracer(t interface {
 type dummyTransport struct {
 	sync.RWMutex
 	traces spanLists
+	stats  []*statsPayload
 }
 
 func newDummyTransport() *dummyTransport {
@@ -1256,7 +1257,16 @@ func (t *dummyTransport) Len() int {
 func (t *dummyTransport) onFlush(_ func() state) {}
 
 func (t *dummyTransport) sendStats(p *statsPayload) error {
+	t.Lock()
+	t.stats = append(t.stats, p)
+	t.Unlock()
 	return nil
+}
+
+func (t *dummyTransport) Stats() []*statsPayload {
+	t.RLock()
+	defer t.RUnlock()
+	return t.stats
 }
 
 func (t *dummyTransport) send(p *payload) (io.ReadCloser, error) {
