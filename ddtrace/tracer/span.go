@@ -102,7 +102,9 @@ func (s *span) SetTag(key string, value interface{}) {
 	}
 	switch key {
 	case ext.Error:
-		s.setTagError(value, &errorConfig{})
+		s.setTagError(value, &errorConfig{
+			noDebugStack: s.noDebugStack,
+		})
 		return
 	}
 	if v, ok := value.(bool); ok {

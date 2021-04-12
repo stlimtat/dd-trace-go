@@ -204,6 +204,31 @@ func TestSpanSetTag(t *testing.T) {
 	assert.Equal("false", span.Meta["some.other.bool"])
 }
 
+func TestSpanSetTagError(t *testing.T) {
+	assert := assert.New(t)
+
+	span1 := newBasicSpan("web.request")
+	span1.setTagError(errors.New("error value with no trace"), &errorConfig{noDebugStack: true})
+	assert.Equal(int32(1), span1.Error)
+	assert.Equal("error value with no trace", span1.Meta[ext.ErrorMsg])
+	assert.Equal("*errors.errorString", span1.Meta[ext.ErrorType])
+	assert.Empty(span1.Meta[ext.ErrorStack])
+
+	span2 := newBasicSpan("web.request")
+	span2.setTagError(errors.New("error value with trace"), &errorConfig{noDebugStack: false})
+	assert.Equal(int32(1), span2.Error)
+	assert.Equal("error value with trace", span2.Meta[ext.ErrorMsg])
+	assert.Equal("*errors.errorString", span2.Meta[ext.ErrorType])
+	assert.NotEmpty(span2.Meta[ext.ErrorStack])
+
+	span3 := newBasicSpan("web.request")
+	span3.setTagError(errors.New("error value with trace, no given config"), &errorConfig{})
+	assert.Equal(int32(1), span3.Error)
+	assert.Equal("error value with trace, no given config", span3.Meta[ext.ErrorMsg])
+	assert.Equal("*errors.errorString", span3.Meta[ext.ErrorType])
+	assert.NotEmpty(span3.Meta[ext.ErrorStack])
+}
+
 func TestSpanSetDatadogTags(t *testing.T) {
 	assert := assert.New(t)
 
