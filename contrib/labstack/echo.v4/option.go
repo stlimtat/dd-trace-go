@@ -8,7 +8,7 @@ package echo
 import (
 	"math"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/internal/globalconfig"
+	"github.com/stlimtat/dd-trace-go/internal/globalconfig"
 )
 
 type config struct {

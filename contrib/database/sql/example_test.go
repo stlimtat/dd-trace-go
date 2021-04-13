@@ -10,9 +10,9 @@ import (
 	"log"
 
 	sqlite "github.com/mattn/go-sqlite3" // Setup application to use Sqlite
-	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	sqltrace "github.com/stlimtat/dd-trace-go/contrib/database/sql"
+	"github.com/stlimtat/dd-trace-go/ddtrace/ext"
+	"github.com/stlimtat/dd-trace-go/ddtrace/tracer"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/lib/pq"

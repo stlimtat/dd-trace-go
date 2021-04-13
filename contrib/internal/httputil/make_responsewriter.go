@@ -16,7 +16,7 @@ import (
 	"os"
 	"text/template"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/contrib/internal/lists"
+	"github.com/stlimtat/dd-trace-go/contrib/internal/lists"
 )
 
 func main() {
@@ -37,7 +37,7 @@ package httputil
 
 import (
 	"net/http"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
+	"github.com/stlimtat/dd-trace-go/ddtrace"
 )
 
 // wrapResponseWriter wraps an underlying http.ResponseWriter so that it can

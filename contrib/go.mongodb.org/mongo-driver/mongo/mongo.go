@@ -16,13 +16,13 @@ import (
 	"strings"
 	"sync"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-	"gopkg.in/DataDog/dd-trace-go.v1/internal/log"
+	"github.com/stlimtat/dd-trace-go/ddtrace"
+	"github.com/stlimtat/dd-trace-go/ddtrace/ext"
+	"github.com/stlimtat/dd-trace-go/ddtrace/tracer"
+	"github.com/stlimtat/dd-trace-go/internal/log"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/event"
+	"github.com/stlimtat/mongo-go-driver/bson"
+	"github.com/stlimtat/mongo-go-driver/event"
 )
 
 type spanKey struct {
@@ -94,7 +94,7 @@ func NewMonitor(opts ...Option) *event.CommandMonitor {
 	for _, opt := range opts {
 		opt(cfg)
 	}
-	log.Debug("contrib/go.mongodb.org/mongo-driver/mongo: Creating Monitor: %#v", cfg)
+	log.Debug("contrib/github.com/stlimtat/mongo-go-driver/mongo: Creating Monitor: %#v", cfg)
 	m := &monitor{
 		spans: make(map[spanKey]ddtrace.Span),
 		cfg:   cfg,

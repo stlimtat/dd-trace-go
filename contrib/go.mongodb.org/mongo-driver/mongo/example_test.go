@@ -8,11 +8,11 @@ package mongo_test
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/stlimtat/mongo-go-driver/bson"
+	"github.com/stlimtat/mongo-go-driver/mongo"
+	"github.com/stlimtat/mongo-go-driver/mongo/options"
 
-	mongotrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/go.mongodb.org/mongo-driver/mongo"
+	mongotrace "github.com/stlimtat/dd-trace-go/contrib/go.mongodb.org/mongo-driver/mongo"
 )
 
 func Example() {

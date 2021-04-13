@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
+	"github.com/stlimtat/dd-trace-go/ddtrace/ext"
+	"github.com/stlimtat/dd-trace-go/ddtrace/mocktracer"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 

@@ -9,7 +9,7 @@ import (
 	"math"
 	"net/http"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/internal"
+	"github.com/stlimtat/dd-trace-go/internal"
 )
 
 type clientConfig struct {

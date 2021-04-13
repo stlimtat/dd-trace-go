@@ -16,8 +16,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/stats"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
+	"github.com/stlimtat/dd-trace-go/ddtrace/ext"
+	"github.com/stlimtat/dd-trace-go/ddtrace/mocktracer"
 )
 
 func TestServerStatsHandler(t *testing.T) {

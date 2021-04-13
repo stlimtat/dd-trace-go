@@ -11,7 +11,7 @@ import (
 	"log"
 	"testing"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
+	"github.com/stlimtat/dd-trace-go/ddtrace/mocktracer"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/lib/pq"

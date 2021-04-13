@@ -9,11 +9,11 @@ import (
 	"math"
 	"net/http"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-	"gopkg.in/DataDog/dd-trace-go.v1/internal"
-	"gopkg.in/DataDog/dd-trace-go.v1/internal/globalconfig"
+	"github.com/stlimtat/dd-trace-go/ddtrace"
+	"github.com/stlimtat/dd-trace-go/ddtrace/ext"
+	"github.com/stlimtat/dd-trace-go/ddtrace/tracer"
+	"github.com/stlimtat/dd-trace-go/internal"
+	"github.com/stlimtat/dd-trace-go/internal/globalconfig"
 )
 
 type config struct {
