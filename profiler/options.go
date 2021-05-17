@@ -18,9 +18,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/stlimtat/dd-trace-go/internal/globalconfig"
-	"github.com/stlimtat/dd-trace-go/internal/log"
-	"github.com/stlimtat/dd-trace-go/internal/version"
+	"gopkg.in/DataDog/dd-trace-go.v1/internal"
+	"gopkg.in/DataDog/dd-trace-go.v1/internal/globalconfig"
+	"gopkg.in/DataDog/dd-trace-go.v1/internal/log"
+	"gopkg.in/DataDog/dd-trace-go.v1/internal/version"
 
 	"github.com/DataDog/datadog-go/statsd"
 )
@@ -77,7 +78,8 @@ var defaultClient = &http.Client{
 var defaultProfileTypes = []ProfileType{MetricsProfile, CPUProfile, HeapProfile}
 
 type config struct {
-	apiKey string
+	apiKey    string
+	agentless bool
 	// targetURL is the upload destination URL. It will be set by the profiler on start to either apiURL or agentURL
 	// based on the other options.
 	targetURL     string
@@ -94,6 +96,7 @@ type config struct {
 	uploadTimeout time.Duration
 	mutexFraction int
 	blockRate     int
+	outputDir     string
 }
 
 func urlForSite(site string) (string, error) {
@@ -158,6 +161,9 @@ func defaultConfig() (*config, error) {
 	if v := os.Getenv("DD_API_KEY"); v != "" {
 		WithAPIKey(v)(&c)
 	}
+	if internal.BoolEnv("DD_PROFILING_AGENTLESS", false) {
+		WithAgentlessUpload()(&c)
+	}
 	if v := os.Getenv("DD_SITE"); v != "" {
 		WithSite(v)(&c)
 	}
@@ -196,6 +202,10 @@ func defaultConfig() (*config, error) {
 	if v := os.Getenv("DD_PROFILING_URL"); v != "" {
 		WithURL(v)(&c)
 	}
+	// not for public use
+	if v := os.Getenv("DD_PROFILING_OUTPUT_DIR"); v != "" {
+		withOutputDir(v)(&c)
+	}
 	return &c, nil
 }
 
@@ -209,12 +219,26 @@ func WithAgentAddr(hostport string) Option {
 	}
 }
 
-// WithAPIKey is deprecated and might be removed in future versions of this
-// package. It allows to skip the agent and talk to the Datadog API directly
-// using the provided API key.
+// WithAPIKey sets the Datadog API Key and takes precedence over the DD_API_KEY
+// env variable. Historically this option was used to enable agentless
+// uploading, but as of dd-trace-go v1.30.0 the behavior has changed to always
+// default to agent based uploading which doesn't require an API key. So if you
+// currently don't have an agent running on the default localhost:8126 hostport
+// you need to set it up, or use WithAgentAddr to specify the hostport location
+// of the agent. See WithAgentlessUpload for more information.
 func WithAPIKey(key string) Option {
 	return func(cfg *config) {
 		cfg.apiKey = key
+	}
+}
+
+// WithAgentlessUpload is currently for internal usage only and not officially
+// supported. You should not enable it unless somebody at Datadog instructed
+// you to do so. It allows to skip the agent and talk to the Datadog API
+// directly using the provided API key.
+func WithAgentlessUpload() Option {
+	return func(cfg *config) {
+		cfg.agentless = true
 	}
 }
 
@@ -355,4 +379,13 @@ func WithUDS(socketPath string) Option {
 			},
 		},
 	})
+}
+
+// withOutputDir writes a copy of all uploaded profiles to the given
+// directory. This is intended for local development or debugging uploading
+// issues. The directory will keep growing, no cleanup is performed.
+func withOutputDir(dir string) Option {
+	return func(cfg *config) {
+		cfg.outputDir = dir
+	}
 }
