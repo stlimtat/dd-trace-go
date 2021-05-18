@@ -22,9 +22,9 @@ package opentracer
 import (
 	"context"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/internal"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/stlimtat/dd-trace-go.v1/ddtrace"
+	"github.com/stlimtat/dd-trace-go.v1/ddtrace/internal"
+	"github.com/stlimtat/dd-trace-go.v1/ddtrace/tracer"
 
 	opentracing "github.com/opentracing/opentracing-go"
 )

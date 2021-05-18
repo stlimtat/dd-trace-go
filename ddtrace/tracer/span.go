@@ -18,11 +18,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/internal"
-	"gopkg.in/DataDog/dd-trace-go.v1/internal/globalconfig"
-	"gopkg.in/DataDog/dd-trace-go.v1/internal/log"
+	"github.com/stlimtat/dd-trace-go.v1/ddtrace"
+	"github.com/stlimtat/dd-trace-go.v1/ddtrace/ext"
+	"github.com/stlimtat/dd-trace-go.v1/ddtrace/internal"
+	"github.com/stlimtat/dd-trace-go.v1/internal/globalconfig"
+	"github.com/stlimtat/dd-trace-go.v1/internal/log"
 
 	"github.com/tinylib/msgp/msgp"
 	"golang.org/x/xerrors"
