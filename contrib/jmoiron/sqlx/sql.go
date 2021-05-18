@@ -8,7 +8,7 @@
 // you will be using, then continue using the package as you normally would.
 //
 // For more information on registering and why this needs to happen, please check the
-// github.com/DataDog/dd-trace-go/contrib/database/sql package.
+// github.com/stlimtat/dd-trace-go/contrib/database/sql package.
 //
 package sqlx // import "github.com/stlimtat/dd-trace-go/contrib/jmoiron/sqlx"
 

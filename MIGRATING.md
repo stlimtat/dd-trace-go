@@ -36,7 +36,7 @@ Notice that the tracer object is no longer returned. Consult the documentation t
 
 ## Service Information
 
-The [`tracer.SetServiceInfo`](https://godoc.org/github.com/DataDog/dd-trace-go/tracer#Tracer.SetServiceInfo) method has been deprecated. The service information is now set automatically based on the value of the [`ext.SpanType`](https://godoc.org/github.com/stlimtat/dd-trace-go/ddtrace/ext#SpanType) tag that was set on the root span of a trace.
+The [`tracer.SetServiceInfo`](https://godoc.org/github.com/stlimtat/dd-trace-go/tracer#Tracer.SetServiceInfo) method has been deprecated. The service information is now set automatically based on the value of the [`ext.SpanType`](https://godoc.org/github.com/stlimtat/dd-trace-go/ddtrace/ext#SpanType) tag that was set on the root span of a trace.
 
 ## Spans
 
@@ -72,7 +72,7 @@ This will create a child of the span which exists inside the passed context and 
 
 ### Setting errors
 
-The [`SetError`](https://godoc.org/github.com/DataDog/dd-trace-go/tracer#Span.SetError) has been deprecated in favour of the [`ext.Error`](https://godoc.org/github.com/stlimtat/dd-trace-go/ddtrace/ext#Error) tag value which matches other tracing libraries in the wild. Whereas before we had:
+The [`SetError`](https://godoc.org/github.com/stlimtat/dd-trace-go/tracer#Span.SetError) has been deprecated in favour of the [`ext.Error`](https://godoc.org/github.com/stlimtat/dd-trace-go/ddtrace/ext#Error) tag value which matches other tracing libraries in the wild. Whereas before we had:
 
 ```go
 span.SetError(err)
@@ -88,7 +88,7 @@ Note that this tag can accept value of the types `error`, `string` and `bool` as
 
 ### Finishing
 
-The [`FinishWithErr`](https://godoc.org/github.com/DataDog/dd-trace-go/tracer#Span.FinishWithErr) and [`FinishWithTime`](https://godoc.org/github.com/DataDog/dd-trace-go/tracer#Span.FinishWithTime) methods have been removed in favour of a set of [`FinishOption`](https://godoc.org/github.com/stlimtat/dd-trace-go/ddtrace/tracer#FinishOption). For example, this would now become:
+The [`FinishWithErr`](https://godoc.org/github.com/stlimtat/dd-trace-go/tracer#Span.FinishWithErr) and [`FinishWithTime`](https://godoc.org/github.com/stlimtat/dd-trace-go/tracer#Span.FinishWithTime) methods have been removed in favour of a set of [`FinishOption`](https://godoc.org/github.com/stlimtat/dd-trace-go/ddtrace/tracer#FinishOption). For example, this would now become:
 
 ```go
 span.Finish(tracer.WithError(err), tracer.FinishTime(t))

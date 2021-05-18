@@ -58,7 +58,7 @@ func TestClientEvalSha(t *testing.T) {
 	assert.Equal("evalsha", span.Tag(ext.ResourceName))
 }
 
-// https://github.com/DataDog/dd-trace-go/issues/387
+// https://github.com/stlimtat/dd-trace-go/issues/387
 func TestIssue387(t *testing.T) {
 	opts := &redis.Options{Addr: "127.0.0.1:6379"}
 	client := NewClient(opts, WithServiceName("my-redis"))

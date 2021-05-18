@@ -179,7 +179,7 @@ func (tp *traceParams) tryTrace(ctx context.Context, qtype queryType, query stri
 		// Not a user error: driver is telling sql package that an
 		// optional interface method is not implemented. There is
 		// nothing to trace here.
-		// See: https://github.com/DataDog/dd-trace-go/issues/270
+		// See: https://github.com/stlimtat/dd-trace-go/issues/270
 		return
 	}
 	name := fmt.Sprintf("%s.query", tp.driverName)

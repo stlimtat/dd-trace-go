@@ -992,7 +992,7 @@ func TestPushTrace(t *testing.T) {
 }
 
 func TestTracerFlush(t *testing.T) {
-	// https://github.com/DataDog/dd-trace-go/issues/377
+	// https://github.com/stlimtat/dd-trace-go/issues/377
 	tracer, transport, flush, stop := startTestTracer(t)
 	defer stop()
 
